@@ -42,9 +42,9 @@ type keyDerivationParams struct {
 	Method     KeyDerivationMethod
 }
 
-type KeyDerivationMethodOption func(*keyDerivationParams)
+type keyDerivationMethodOption func(*keyDerivationParams)
 
-func NewDerivationParams(opts ...KeyDerivationMethodOption) *keyDerivationParams {
+func NewDerivationParams(opts ...keyDerivationMethodOption) *keyDerivationParams {
 	const (
 		method = Pbkdf2HMACSHA1_1003
 		salt   = ""
@@ -61,14 +61,14 @@ func NewDerivationParams(opts ...KeyDerivationMethodOption) *keyDerivationParams
 	return k
 }
 
-func WithPbkdf2HMACSHA1_1003() KeyDerivationMethodOption {
+func WithPbkdf2HMACSHA1_1003() keyDerivationMethodOption {
 	return func(k *keyDerivationParams) {
 		k.Method = Pbkdf2HMACSHA1_1003
 		k.ScriptSalt = ""
 	}
 }
 
-func WithScrypt8192_8_11(salt string) KeyDerivationMethodOption {
+func WithScrypt8192_8_11(salt string) keyDerivationMethodOption {
 	return func(k *keyDerivationParams) {
 		k.Method = Scrypt8192_8_11
 		k.ScriptSalt = salt
@@ -85,9 +85,9 @@ func NewKeys(params *keyDerivationParams, password string) (ks *keys, err error)
 	ks = &keys{}
 	switch params.Method {
 	case Pbkdf2HMACSHA1_1003:
-		err = ks.InitByDerivationUsingPbkdf2(password)
+		err = ks.initByDerivationUsingPbkdf2(password)
 	case Scrypt8192_8_11:
-		err = ks.InitByDerivationUsingScrypt(params.ScriptSalt, password)
+		err = ks.initByDerivationUsingScrypt(params.ScriptSalt, password)
 	default:
 		err = fmt.Errorf("unsupported derivation method")
 	}
@@ -97,7 +97,7 @@ func NewKeys(params *keyDerivationParams, password string) (ks *keys, err error)
 // Kuser = PBKDF2(P, Suser, Nuser, 16)
 // Kenc = PBKDF2(P, Suser, Nenc, 16)
 // Kmac = PBKDF2(P, Suser, Nmac, 16)
-func (k *keys) InitByDerivationUsingPbkdf2(password string) error {
+func (k *keys) initByDerivationUsingPbkdf2(password string) error {
 	bp := []byte(password)
 
 	k.UserKey = pbkdf2.Key(bp, RawConstantSalt, UserIterations, DerivedKeySizeInBytes, sha1.New)
@@ -107,7 +107,7 @@ func (k *keys) InitByDerivationUsingPbkdf2(password string) error {
 	return nil
 }
 
-func (k *keys) InitByDerivationUsingScrypt(salt, password string) error {
+func (k *keys) initByDerivationUsingScrypt(salt, password string) error {
 	// TODO: implementation
 	return nil
 }
