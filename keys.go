@@ -97,7 +97,7 @@ func NewKeys(params *keyDerivationParams, password string) (ks *keys, err error)
 // Kuser = PBKDF2(P, Suser, Nuser, 16)
 // Kenc = PBKDF2(P, Suser, Nenc, 16)
 // Kmac = PBKDF2(P, Suser, Nmac, 16)
-func (k *keys) initByDerivationUsingPbkdf2(password string) error {
+func (k *keys) initByDerivationUsingPbkdf2(password string) error { //nolint: unparam
 	bp := []byte(password)
 
 	k.UserKey = pbkdf2.Key(bp, RawConstantSalt, UserIterations, DerivedKeySizeInBytes, sha1.New)

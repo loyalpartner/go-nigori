@@ -23,10 +23,11 @@ const (
 )
 
 type Nigori interface {
-	Derivate(params *keyDerivationParams, password string) (err error)
+	Derivate(params *keyDerivationParams, password string) (err error) //nolint: misspell
 	Permute(t Type, name string) (string, error)
 	Encrypt(value string) (string, error)
 	Decrypt(value string) (string, error)
+	ExportKeys() *keys
 }
 
 // A (partial) implementation of nigori, a protocol to securely store secrets in
