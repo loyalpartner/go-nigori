@@ -22,6 +22,13 @@ const (
 	Password      Type = 0
 )
 
+type Nigori interface {
+	Derivate(params *keyDerivationParams, password string) (err error)
+	Permute(t Type, name string) (string, error)
+	Encrypt(value string) (string, error)
+	Decrypt(value string) (string, error)
+}
+
 // A (partial) implementation of nigori, a protocol to securely store secrets in
 // the cloud. This implementation does not support server authentication or
 // assisted key derivation.

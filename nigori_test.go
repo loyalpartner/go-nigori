@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPermute(t *testing.T) {
 	tests := []struct {
 		name             string
 		password         string
-		expectedPermuted string
+		expectedPermuted string // Base64 encoded
 		hasError         bool
 	}{
 		{
@@ -27,7 +28,7 @@ func TestPermute(t *testing.T) {
 			ngr := NewNigori()
 			params := NewDerivationParams(WithPbkdf2HMACSHA1_1003())
 			err := ngr.Derivate(params, test.password)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			permuted, err := ngr.Permute(Password, NigoriKeyName)
 
 			if test.hasError {
@@ -46,7 +47,7 @@ func TestEncrypt(t *testing.T) {
 	tests := []struct {
 		name      string
 		password  string
-		plaintext string
+		plaintext string // Base64 encoded
 		hasError  bool
 	}{
 		{
@@ -64,16 +65,18 @@ func TestEncrypt(t *testing.T) {
 			err := ngr.Derivate(params, test.password)
 			assert.NoError(t, err)
 
-			encrypted, _ := ngr.Encrypt(test.plaintext)
-			decrypted, _ := ngr.Decrypt(encrypted)
+			encrypted, err := ngr.Encrypt(test.plaintext)
+			require.NoError(t, err)
+			decrypted, err := ngr.Decrypt(encrypted)
+			require.NoError(t, err)
 
 			encoder := base64.StdEncoding
-			dc, _ := encoder.DecodeString(decrypted)
+			dc, err := encoder.DecodeString(decrypted)
+			require.NoError(t, err)
 			decrypted = string(dc)
 
 			if test.hasError {
-				assert.Error(t, err)
-				return
+				require.Error(t, err)
 			} else if assert.NoError(t, err) {
 				assert.Equal(t, test.plaintext, decrypted)
 			}
@@ -85,8 +88,8 @@ func TestDecrypt(t *testing.T) {
 	tests := []struct {
 		name       string
 		password   string
-		ciphertext string
-		plaintext  string
+		ciphertext string // Base64 encoded
+		plaintext  string // Base64 encoded
 		hasError   bool
 	}{
 		{
@@ -112,14 +115,10 @@ func TestDecrypt(t *testing.T) {
 			assert.NoError(t, err)
 
 			decrypted, err := ngr.Decrypt(test.ciphertext)
+			require.NoError(t, err)
 
-			if test.hasError {
-				assert.Error(t, err)
-				return
-			} else if assert.NoError(t, err) {
-				encoder := base64.StdEncoding
-				assert.Equal(t, encoder.EncodeToString([]byte(test.plaintext)), decrypted)
-			}
+			encoder := base64.StdEncoding
+			assert.Equal(t, encoder.EncodeToString([]byte(test.plaintext)), decrypted)
 		})
 	}
 }
