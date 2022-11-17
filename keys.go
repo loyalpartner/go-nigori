@@ -42,10 +42,36 @@ type keyDerivationParams struct {
 	Method     KeyDerivationMethod
 }
 
-func NewDerivationParams(method KeyDerivationMethod, salt string) *keyDerivationParams {
-	return &keyDerivationParams{
+type KeyDerivationMethodOption func(*keyDerivationParams)
+
+func NewDerivationParams(opts ...KeyDerivationMethodOption) *keyDerivationParams {
+	const (
+		method = Pbkdf2HMACSHA1_1003
+		salt   = ""
+	)
+	k := &keyDerivationParams{
 		ScriptSalt: salt,
 		Method:     method,
+	}
+
+	for _, opt := range opts {
+		opt(k)
+	}
+
+	return k
+}
+
+func WithPbkdf2HMACSHA1_1003() KeyDerivationMethodOption {
+	return func(k *keyDerivationParams) {
+		k.Method = Pbkdf2HMACSHA1_1003
+		k.ScriptSalt = ""
+	}
+}
+
+func WithScrypt8192_8_11(salt string) KeyDerivationMethodOption {
+	return func(k *keyDerivationParams) {
+		k.Method = Scrypt8192_8_11
+		k.ScriptSalt = salt
 	}
 }
 

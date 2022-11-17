@@ -27,7 +27,7 @@ func TestNewKeysUsingPbkdf2(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			keys, err := NewKeys(NewDerivationParams(Pbkdf2HMACSHA1_1003, ""), test.password)
+			keys, err := NewKeys(NewDerivationParams(WithPbkdf2HMACSHA1_1003()), test.password)
 
 			if test.hasError {
 				assert.Error(t, err)

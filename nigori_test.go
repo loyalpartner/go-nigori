@@ -25,7 +25,7 @@ func TestPermute(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ngr := NewNigori()
-			params := NewDerivationParams(Pbkdf2HMACSHA1_1003, "")
+			params := NewDerivationParams(WithPbkdf2HMACSHA1_1003())
 			err := ngr.Derivate(params, test.password)
 			assert.NoError(t, err)
 			permuted, err := ngr.Permute(Password, NigoriKeyName)
@@ -60,7 +60,7 @@ func TestEncrypt(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ngr := NewNigori()
-			params := NewDerivationParams(Pbkdf2HMACSHA1_1003, "")
+			params := NewDerivationParams(WithPbkdf2HMACSHA1_1003())
 			err := ngr.Derivate(params, test.password)
 			assert.NoError(t, err)
 
@@ -107,7 +107,7 @@ func TestDecrypt(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ngr := NewNigori()
-			params := NewDerivationParams(Pbkdf2HMACSHA1_1003, "")
+			params := NewDerivationParams(WithPbkdf2HMACSHA1_1003())
 			err := ngr.Derivate(params, test.password)
 			assert.NoError(t, err)
 
