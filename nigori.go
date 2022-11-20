@@ -9,17 +9,17 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
+	"errors"
 )
 
-type Type int64
+type Type uint32
 
 var initialVector = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 const (
 	NigoriKeyName      = "nigori-key"
 	IvSize             = 16
-	Password      Type = 0
+	Password      Type = 1
 )
 
 type Nigori interface {
@@ -62,8 +62,8 @@ func (n *nigori) Permute(t Type, name string) (string, error) {
 	key := n.Keys.EncryptionKey
 	mkey := n.Keys.MacKey
 
-	// black magic
-	data, _ := encoder.DecodeString("AAAABAAAAAEAAAAKbmlnb3JpLWtleQ==")
+	ns := NewNigoriStream(Password, NigoriKeyName)
+	plaintext := ns.Stream
 
 	// AES encrypt
 	c, err := aes.NewCipher(key)
@@ -71,7 +71,7 @@ func (n *nigori) Permute(t Type, name string) (string, error) {
 		return "", err
 	}
 	encrypter := cipher.NewCBCEncrypter(c, initialVector)
-	ciphertext := pad(data, c.BlockSize())
+	ciphertext := pad(plaintext, c.BlockSize())
 	encrypter.CryptBlocks(ciphertext, ciphertext)
 
 	hasher := hmac.New(sha256.New, mkey)
@@ -87,8 +87,6 @@ func (n *nigori) Permute(t Type, name string) (string, error) {
 // Encrypts |value|. Note that on success, |encrypted| will be Base64
 // encoded.
 func (n *nigori) Encrypt(value string) (string, error) {
-	encoder := base64.StdEncoding
-
 	key := n.Keys.EncryptionKey
 	mackey := n.Keys.MacKey
 
@@ -114,7 +112,10 @@ func (n *nigori) Encrypt(value string) (string, error) {
 	result = append(result, iv...)
 	result = append(result, ciphertext...)
 	result = append(result, hash...)
+
+	encoder := base64.StdEncoding
 	encrypted := encoder.EncodeToString(result)
+
 	return encrypted, nil
 }
 
@@ -130,7 +131,7 @@ func (n *nigori) Decrypt(value string) (string, error) {
 		return "", err
 	}
 	if len(input) < IvSize*2+HashSize {
-		return "", fmt.Errorf("invalid value")
+		return "", errors.New("invalid value")
 	}
 
 	// The input is:
@@ -148,7 +149,7 @@ func (n *nigori) Decrypt(value string) (string, error) {
 
 	verified := hasher.Sum(nil)
 	if !hmac.Equal(hash, verified) {
-		return "", fmt.Errorf("invalid value")
+		return "", errors.New("verify failed")
 	}
 
 	// decrypt

@@ -115,7 +115,12 @@ func TestDecrypt(t *testing.T) {
 			assert.NoError(t, err)
 
 			decrypted, err := ngr.Decrypt(test.ciphertext)
-			require.NoError(t, err)
+			if test.hasError {
+				require.Error(t, err)
+				return
+			} else {
+				require.NoError(t, err)
+			}
 
 			encoder := base64.StdEncoding
 			assert.Equal(t, encoder.EncodeToString([]byte(test.plaintext)), decrypted)
