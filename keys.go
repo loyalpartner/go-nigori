@@ -100,9 +100,16 @@ func NewKeys(params *keyDerivationParams, password string) (ks *keys, err error)
 func (k *keys) initByDerivationUsingPbkdf2(password string) error { //nolint: unparam
 	bp := []byte(password)
 
-	k.UserKey = pbkdf2.Key(bp, RawConstantSalt, UserIterations, DerivedKeySizeInBytes, sha1.New)
-	k.EncryptionKey = pbkdf2.Key(bp, RawConstantSalt, EncryptionIterations, DerivedKeySizeInBytes, sha1.New)
-	k.MacKey = pbkdf2.Key(bp, RawConstantSalt, SigningIterations, DerivedKeySizeInBytes, sha1.New)
+	salt := RawConstantSalt
+	ksize := DerivedKeySizeInBytes
+	ui := UserIterations
+	ei := EncryptionIterations
+	si := SigningIterations
+
+	k.UserKey, k.EncryptionKey, k.MacKey =
+		pbkdf2.Key(bp, salt, ui, ksize, sha1.New),
+		pbkdf2.Key(bp, salt, ei, ksize, sha1.New),
+		pbkdf2.Key(bp, salt, si, ksize, sha1.New)
 
 	return nil
 }
