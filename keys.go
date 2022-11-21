@@ -9,12 +9,12 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
-type KeyDerivationMethod int64
+type keyDerivationMethod int64
 
 const (
-	Pbkdf2HMACSHA1_1003 KeyDerivationMethod = 0 // PBKDF2-HMAC-SHA1 with 1003 iterations.
-	Scrypt8192_8_11     KeyDerivationMethod = 1 // scrypt with N = 2^13, r = 8, p = 11 and random salt.
-	Unsupported         KeyDerivationMethod = 2 // Unsupported method, likely from a future version.
+	pbkdf2HMACSHA1_1003 keyDerivationMethod = 0 // PBKDF2-HMAC-SHA1 with 1003 iterations.
+	scrypt8192_8_11     keyDerivationMethod = 1 // scrypt with N = 2^13, r = 8, p = 11 and random salt.
+	unsupported         keyDerivationMethod = 2 // Unsupported method, likely from a future version.
 )
 
 var (
@@ -47,14 +47,14 @@ const (
 
 type keyDerivationParams struct {
 	ScriptSalt string
-	Method     KeyDerivationMethod
+	Method     keyDerivationMethod
 }
 
 type keyDerivationMethodOption func(*keyDerivationParams)
 
 func NewDerivationParams(opts ...keyDerivationMethodOption) *keyDerivationParams {
 	const (
-		method = Pbkdf2HMACSHA1_1003
+		method = pbkdf2HMACSHA1_1003
 		salt   = ""
 	)
 	k := &keyDerivationParams{
@@ -71,14 +71,14 @@ func NewDerivationParams(opts ...keyDerivationMethodOption) *keyDerivationParams
 
 func WithPbkdf2HMACSHA1_1003() keyDerivationMethodOption {
 	return func(k *keyDerivationParams) {
-		k.Method = Pbkdf2HMACSHA1_1003
+		k.Method = pbkdf2HMACSHA1_1003
 		k.ScriptSalt = ""
 	}
 }
 
 func WithScrypt8192_8_11(salt string) keyDerivationMethodOption {
 	return func(k *keyDerivationParams) {
-		k.Method = Scrypt8192_8_11
+		k.Method = scrypt8192_8_11
 		k.ScriptSalt = salt
 	}
 }
@@ -92,9 +92,9 @@ type keys struct {
 func NewKeys(params *keyDerivationParams, password string) (ks *keys, err error) {
 	ks = &keys{}
 	switch params.Method {
-	case Pbkdf2HMACSHA1_1003:
+	case pbkdf2HMACSHA1_1003:
 		err = ks.initByDerivationUsingPbkdf2(password)
-	case Scrypt8192_8_11:
+	case scrypt8192_8_11:
 		err = ks.initByDerivationUsingScrypt(params.ScriptSalt, password)
 	default:
 		err = errors.New("unsupported derivation method")
