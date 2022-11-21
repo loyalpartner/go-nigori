@@ -130,7 +130,7 @@ func (n *nigori) Decrypt(value string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if len(input) < IvSize*2+HashSize {
+	if len(input) < IvSize*2+hashSize {
 		return "", errors.New("invalid value")
 	}
 
@@ -140,8 +140,8 @@ func (n *nigori) Decrypt(value string) (string, error) {
 	// * hash (32 bytes)
 	iv := input[0:IvSize]
 	l := len(input)
-	ciphertext := input[IvSize : l-HashSize]
-	hash := input[l-HashSize:]
+	ciphertext := input[IvSize : l-hashSize]
+	hash := input[l-hashSize:]
 
 	// hmac verify
 	hasher := hmac.New(sha256.New, mackey)

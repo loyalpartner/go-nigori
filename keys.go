@@ -1,10 +1,12 @@
 package nigori
 
 import (
+	"bytes"
 	"crypto/sha1" //nolint: gosec
-	"fmt"
+	"errors"
 
 	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/scrypt"
 )
 
 type KeyDerivationMethod int64
@@ -21,20 +23,26 @@ var (
 	// "dummy") as PBKDF2_HMAC_SHA1(Ns("dummy") + Ns("localhost"), "saltsalt",
 	// 1001, 128), where Ns(S) is the NigoriStream representation of S (32-bit
 	// big-endian length of S followed by S itself).>)
-	RawConstantSalt = []byte{
+	rawConstantSalt = []byte{
 		0xc7, 0xca, 0xfb, 0x23, 0xec,
 		0x2a, 0x9d, 0x4c, 0x03, 0x5a,
 		0x90, 0xae, 0xed, 0x8b, 0xa4, 0x98,
 	}
-	UserIterations       = 1002
-	EncryptionIterations = 1003
-	SigningIterations    = 1004
 )
 
 const (
-	DerivedKeySizeInBits  = 128
-	DerivedKeySizeInBytes = DerivedKeySizeInBits / 8
-	HashSize              = 32
+	derivedKeySizeInBits  = 128
+	derivedKeySizeInBytes = derivedKeySizeInBits / 8
+	hashSize              = 32
+
+	userIterations       = 1002
+	encryptionIterations = 1003
+	signingIterations    = 1004
+
+	costParameter            = 8192 // 2^13.
+	blockSize                = 8
+	parallelizationParameter = 11
+	maxMemoryBytes           = 32 * 1024 * 1024 // 32 MiB.
 )
 
 type keyDerivationParams struct {
@@ -89,7 +97,7 @@ func NewKeys(params *keyDerivationParams, password string) (ks *keys, err error)
 	case Scrypt8192_8_11:
 		err = ks.initByDerivationUsingScrypt(params.ScriptSalt, password)
 	default:
-		err = fmt.Errorf("unsupported derivation method")
+		err = errors.New("unsupported derivation method")
 	}
 	return ks, err
 }
@@ -100,11 +108,11 @@ func NewKeys(params *keyDerivationParams, password string) (ks *keys, err error)
 func (k *keys) initByDerivationUsingPbkdf2(password string) error { //nolint: unparam
 	bp := []byte(password)
 
-	salt := RawConstantSalt
-	ksize := DerivedKeySizeInBytes
-	ui := UserIterations
-	ei := EncryptionIterations
-	si := SigningIterations
+	salt := rawConstantSalt
+	ksize := derivedKeySizeInBytes
+	ui := userIterations
+	ei := encryptionIterations
+	si := signingIterations
 
 	k.UserKey, k.EncryptionKey, k.MacKey =
 		pbkdf2.Key(bp, salt, ui, ksize, sha1.New),
@@ -115,6 +123,21 @@ func (k *keys) initByDerivationUsingPbkdf2(password string) error { //nolint: un
 }
 
 func (k *keys) initByDerivationUsingScrypt(salt, password string) error {
-	// TODO: implementation
+	ksize := derivedKeySizeInBytes
+
+	// |user_key| is not used anymore. However, old clients may fail to import a
+	// Nigori node without one. We initialize it to all zeroes to prevent a
+	// failure on those clients.
+	k.UserKey = bytes.Repeat([]byte{0x0}, ksize)
+
+	masterKey, err := scrypt.Key(
+		[]byte(password), []byte(salt),
+		costParameter, blockSize,
+		parallelizationParameter, 2*ksize)
+	if err != nil {
+		return err
+	}
+
+	k.EncryptionKey, k.MacKey = masterKey[:ksize], masterKey[ksize:]
 	return nil
 }

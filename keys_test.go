@@ -5,36 +5,47 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNewKeysUsingPbkdf2(t *testing.T) {
+func TestNewKeys(t *testing.T) {
 	tests := []struct {
 		name            string
 		password        string
+		methodOption    keyDerivationMethodOption
 		expectedUserKey string
 		expectedEncKey  string
 		expectedMacKey  string
 		hasError        bool
 	}{
 		{
-			name:            "success",
+			name:            "derivation using pbkdf2",
 			password:        "CAMSEM3y43hLmgd9Zr8e0U7YsioaIJTpcvWg+uX00KlEOAdJuLlKqGen1P0agzDUVV9fdlqK",
+			methodOption:    WithPbkdf2HMACSHA1_1003(),
 			expectedUserKey: "rZ39BnGk649CrKdF8mJ8Dg==",
 			expectedEncKey:  "4+79zzoztaNSHeb2RVxNPA==",
 			expectedMacKey:  "reTRBk/e4LtVdRc3Erp5kg==",
+		},
+		{
+			name:            "derivation using scrypt",
+			password:        "hunter2",
+			methodOption:    WithScrypt8192_8_11("alpensalz"),
+			expectedUserKey: "AAAAAAAAAAAAAAAAAAAAAA==",
+			expectedEncKey:  "iqc14AkTOaXlHaOz3Rsyig==",
+			expectedMacKey:  "p+c2EZaN/SvKWzOCrtRRug==",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			keys, err := NewKeys(NewDerivationParams(WithPbkdf2HMACSHA1_1003()), test.password)
+			keys, err := NewKeys(NewDerivationParams(test.methodOption), test.password)
 
 			if test.hasError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			encoder := base64.StdEncoding
 			userkey := encoder.EncodeToString(keys.UserKey)
